@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flight Path Finder</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+</head>
+<body>
+    <div class="container">
+        <div class="control-panel">
+            <div class="input-group">
+                <label for="start">Điểm xuất phát:</label>
+                <select id="start"></select>
+            </div>
+            <div class="input-group">
+                <label for="end">Điểm đích:</label>
+                <select id="end"></select>
+            </div>
+            <div class="input-group">
+                <label for="via">Điểm chặn:</label>
+                <select id="via"></select>
+            </div>
+            <button id="findPath">Tìm đường</button>
+            <div id="pathResult" class="path-result"></div>
+        </div>
+        <div id="map"></div>
+    </div>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="js/constants.js"></script>
+    <script src="js/dijkstra.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html> 

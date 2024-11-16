@@ -1,0 +1,54 @@
+1. Lưu đồ thuật toán tổng quát:
+
+graph TD
+    A[Bắt đầu] --> B[Khởi tạo bản đồ]
+    B --> C[Khởi tạo các điểm và đường bay]
+    C --> D[Khởi tạo đồ thị]
+    D --> E[Chờ người dùng chọn điểm]
+    E --> F{Có điểm chặn?}
+    F -->|Có| G[Áp dụng Dijkstra với điểm chặn]
+    F -->|Không| H[Áp dụng Dijkstra thông thường]
+    G --> I[Hiển thị kết quả]
+    H --> I
+    I --> E
+
+2. Chi tiết các thành phần:
+A. Cấu trúc dữ liệu:
+Điểm (Points):
+Lưu tọa độ lat, lng
+Phân loại điểm (điểm thường, điểm đặc biệt)
+
+Đường bay (Routes):
+Các đường bay màu đỏ và xanh
+Mỗi đường bay chứa danh sách điểm và màu sắc
+Đồ thị (Graph):
+Sử dụng danh sách kề (adjacencyList)
+Mỗi cạnh chứa trọng số là khoảng cách
+B. Các module chính:
+MapHandler:
+Khởi tạo bản đồ Leaflet
+Vẽ các điểm và đường bay
+Xử lý hiển thị/ẩn đường bay
+Highlight đường đi ngắn nhất
+FlightPathFinder:
+Khởi tạo đồ thị từ dữ liệu
+Xử lý tương tác người dùng
+Kết nối giữa thuật toán và hiển thị
+Graph & Dijkstra:
+Cài đặt cấu trúc đồ thị
+Thuật toán tìm đường đi ngắn nhất
+Xử lý trường hợp có điểm chặn
+
+4. Các tính năng đặc biệt:
+Tính khoảng cách:
+Sử dụng công thức Haversine
+Tính toán trên bề mặt cầu của Trái Đất
+Xử lý điểm chặn:
+Tạo bản sao đồ thị
+Loại bỏ điểm chặn
+Tìm đường đi mới
+Hiển thị trực quan:
+Đường đi màu vàng đậm
+Hiển thị khoảng cách từng đoạn
+Highlight các điểm đặc biệt
+Tùy chọn ẩn/hiện đường bay
