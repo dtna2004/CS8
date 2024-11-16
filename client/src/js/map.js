@@ -150,14 +150,15 @@ class MapHandler {
             totalDistance += distance;
             
             // Tính góc của đoạn đường
-            const angle = Math.atan2(point2.lat - point1.lat, point2.lng - point1.lng) * 180 / Math.PI;
+            const angle = Math.atan2(point2.lng - point1.lng, point2.lat - point1.lat) * 180 / Math.PI;
             
-            // Tính điểm giữa
+            // Tính điểm chính giữa đoạn đường
             const midPoint = {
                 lat: (point1.lat + point2.lat) / 2,
                 lng: (point1.lng + point2.lng) / 2
             };
             
+            // Tạo label với góc xoay phù hợp
             const distanceLabel = L.tooltip({
                 permanent: true,
                 direction: 'center',
@@ -167,10 +168,15 @@ class MapHandler {
             .setContent(`${distance.toFixed(1)} km`)
             .setLatLng([midPoint.lat, midPoint.lng]);
             
-            // Thêm style trực tiếp để xoay label theo góc của đường
+            // Điều chỉnh góc xoay của label
             const labelElement = distanceLabel.getElement();
             if (labelElement) {
-                labelElement.style.setProperty('--angle', `${angle}deg`);
+                // Điều chỉnh góc để text luôn dễ đọc
+                let rotationAngle = angle;
+                if (angle > 90 || angle < -90) {
+                    rotationAngle = angle + 180;
+                }
+                labelElement.style.setProperty('--angle', `${rotationAngle}deg`);
             }
             
             distanceLabel.addTo(this.map);
@@ -179,6 +185,7 @@ class MapHandler {
         
         pathPoints.push([POINTS[path[path.length - 1]].lat, POINTS[path[path.length - 1]].lng]);
         
+        // Vẽ đường màu vàng
         this.pathLayer = L.polyline(pathPoints, {
             color: '#FFD700',
             weight: 4,

@@ -108,8 +108,10 @@ button#findPath:hover {
     white-space: nowrap;
     transform: rotate(var(--angle));
     transform-origin: center;
-    margin-top: -8px !important;
     pointer-events: none;
+    text-align: center;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 .leaflet-tooltip.distance-label {
