@@ -5,6 +5,8 @@ class MapHandler {
         this.pointLayers = {};
         this.distanceLabels = [];
         this.pathLayer = null;
+        this.dashedRoutesVisible = true;
+        this.dashedRoutes = {};
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
@@ -13,6 +15,9 @@ class MapHandler {
         this.initializePoints();
         this.initializeRoutes();
         this.addRouteToggleControl();
+        document.getElementById('toggleDashedRoutes').addEventListener('click', () => {
+            this.toggleDashedRoutes();
+        });
     }
 
     addRouteToggleControl() {
@@ -44,41 +49,48 @@ class MapHandler {
     initializePoints() {
         const bluePoints = ['UDOSI', 'OSIXA', 'SAMAP', 'SUDUN', 'VIMUT'];
         const redPoints = ['PANDI', 'ARESI'];
+        const hiddenPoints = ['D18', 'D19', 'D20', 'D21', 'DX', 'DY', 'DZ', 'D05', 'D08', 'DN2'];
 
         Object.entries(POINTS).forEach(([name, point]) => {
-            const marker = L.marker([point.lat, point.lng]).addTo(this.map);
-            
-            let labelClass = 'point-label';
-            if (bluePoints.includes(name)) {
-                labelClass = 'blue-point';
-            } else if (redPoints.includes(name)) {
-                labelClass = 'red-point';
+            if (!hiddenPoints.includes(name)) {
+                const marker = L.marker([point.lat, point.lng]).addTo(this.map);
+                
+                let labelClass = 'point-label';
+                if (bluePoints.includes(name)) {
+                    labelClass = 'blue-point';
+                } else if (redPoints.includes(name)) {
+                    labelClass = 'red-point';
+                }
+                
+                marker.bindTooltip(name, {
+                    permanent: true,
+                    direction: 'top',
+                    className: labelClass,
+                    offset: [-15, 20]
+                });
+                
+                this.pointLayers[name] = marker;
             }
-            
-            marker.bindTooltip(name, {
-                permanent: true,
-                direction: 'top',
-                className: labelClass,
-                offset: [-14, 20]
-            });
-            
-            this.pointLayers[name] = marker;
         });
     }
 
     initializeRoutes() {
-        // Vẽ các đường bay
         Object.entries(ROUTES).forEach(([routeName, route]) => {
             const points = route.points.map(point => POINTS[point]);
-            if (points.every(p => p)) { // Kiểm tra tất cả điểm tồn tại
+            if (points.every(p => p)) {
                 const polyline = L.polyline(
                     points.map(p => [p.lat, p.lng]),
                     {
                         color: route.color,
-                        weight: 2
+                        weight: 2,
+                        dashArray: route.dashArray || null
                     }
                 ).addTo(this.map);
                 this.routeLayers[routeName] = polyline;
+                
+                if (route.dashArray) {
+                    this.dashedRoutes[routeName] = polyline;
+                }
             }
         });
 
@@ -258,5 +270,15 @@ class MapHandler {
             totalDistance += distance;
         }
         return totalDistance;
+    }
+
+    toggleDashedRoutes() {
+        this.dashedRoutesVisible = !this.dashedRoutesVisible;
+        Object.entries(this.routeLayers).forEach(([routeName, layer]) => {
+            const route = ROUTES[routeName];
+            if (route && route.dashArray) {
+                layer.setStyle({ opacity: this.dashedRoutesVisible ? 0.8 : 0 });
+            }
+        });
     }
 }

@@ -2,9 +2,9 @@ const POINTS = {
 
     D05: { lat: 15.67944, lng: 110.69806 },
     VIMUT: { lat: 13.96250, lng: 109.52139 },
-    //D21: { lat: 11.90444, lng: 109.49278 },
-    //D20: { lat: 11.45806, lng: 109.15750 },
-    //D19: { lat: 10.23722, lng: 108.24694 },
+    D21: { lat: 11.90444, lng: 109.49278 },
+    D20: { lat: 11.45806, lng: 109.15750 },
+    D19: { lat: 10.23722, lng: 108.24694 },
     OSIXA: { lat: 9.52222, lng: 109.84389 },
     D08: { lat: 9.56472, lng: 112.36889 },
     DONDA: { lat: 14.70333, lng: 112.02167 },
@@ -45,7 +45,11 @@ const POINTS = {
     AGSIS: { lat: 11.0119, lng: 108.4952 },
     ATVIT: { lat: 12.14056, lng: 109.49611 },
     MUGAN: { lat: 12.36667, lng: 111.87167 },
-    DN2: { lat: 7.00000, lng: 104.84306 }
+    DN2: { lat: 7.00000, lng: 104.84306 },
+    DX: { lat: 14.70333, lng: 114.00000 },
+    DY: { lat: 14.70333, lng: 112.02167},
+    DZ: { lat: 7.00000, lng: 112.36889},
+    D18: { lat: 10.59083, lng: 107.44722}
 
 };
 
@@ -89,11 +93,103 @@ const ROUTES = {
     L644: {
         points: ['DUDIS ', 'CN', 'TULTU'],
         color: '#0000ff'
+    },
+    ESPOB: {
+        points: ['ESPOB', 'DAGAG'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+    DUDIS: {
+        points: ['DUDIS', 'MOXON', 'CN', 'ELSAS', 'SAMAP', 'OSIXA'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+    SAMAP: {
+        points: ['SUDUN', 'DAMVO', 'DOXAR', 'NITOM', 'MIMUX', 'MOXON'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+
+    EXOTO: {
+        points: ['DAMEL'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+    VEPAM: {
+        points: ['NITOM', 'CRA', 'ATVIT', 'DOXAR', 'DAMVO'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+    ATVIT: {
+        points: ['DOXAR', 'AGSIS', 'DAMVO'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+    AGSIS: {
+        points: ['DOXAR', 'CRA', 'SUDUN', 'RUTIT', 'DAGAG', 'ELSAS'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+    ELSAS: {
+        points: ['DUDIS'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+    MIGUG: {
+        points: ['DAMEL', 'ANOKI'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+    MESOX: {
+        points: ['ANOKI', 'AGSAM', 'DOXAR', 'DAMVO'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+    MUGAN: {
+        points: ['DAMVO', 'AGSAM', 'ALDAS'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+    MIMUX: {
+        points: ['UDOSI', 'SAMAP', 'SUDUN', 'DAGAG'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+    MAPNO: {
+        points: ['AKMON', 'SUDUN'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+    AKMON: {
+        points: ['MAPNO'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+    UDOSI: {
+        points: ['MIMUX'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+    ALDAS: {
+        points: ['MUGAN'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+    AGSAM: {
+        points: ['MUGAN', 'MESOX'],
+        color: '#00000f',
+        dashArray: '5, 10'
+    },
+    ANOKI: {
+        points: ['MESOX'],
+        color: '#00000f',
+        dashArray: '5, 10'
     }
+
 };
 
 const BOUNDARIES = [
-    'MIGUG', 'DONDA', 'EXOTO', 'D05', 'VIMUT', 'KARAN', 'ASEBO', 'TULTU', 'VIGEN', 'DN2', 'ESPOB', 'DUDIS', 'MELAS', 'AKMON', 'D08', 'PANDI', 'ARESI','MIGUG'
+    'DONDA', 'EXOTO', 'D05', 'VIMUT', 'D21', 'D20', 'D19', 'D18', 'TULTU', 'VIGEN','DN2','DZ','D08', 'DX', 'DY'
 ];
 
 if (typeof module !== 'undefined' && module.exports) {
