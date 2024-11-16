@@ -58,163 +58,63 @@ button#findPath:hover {
     border: 1px solid #dcdfe6;
 }
 
+.leaflet-tooltip {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin-top: -35px !important;
+}
+
+.point-label {
+    color: #333;
+    font-weight: bold;
+    font-size: 12px;
+    white-space: nowrap;
+    text-align: center;
+}
+
 .blue-point {
     color: #0066ff;
     font-weight: bold;
     font-size: 12px;
+    white-space: nowrap;
+    text-align: center;
 }
 
 .red-point {
     color: #ff0000;
     font-weight: bold;
     font-size: 12px;
-}
-
-.leaflet-tooltip {
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    padding: 0;
-}
-
-.leaflet-tooltip.blue-point {
-    color: #0066ff;
-}
-
-.leaflet-tooltip.red-point {
-    color: #ff0000;
-}
-
-.leaflet-tooltip.point-label {
-    color: #333;
-}
-
-.special-point {
-    font-weight: bold;
+    white-space: nowrap;
     text-align: center;
-    line-height: 30px;
 }
 
-.start-point {
-    color: #00ff00;
-    font-size: 14px;
-}
-
-.end-point {
-    color: #ff0000;
-    font-size: 14px;
-}
-
-.via-point {
-    color: #0000ff;
-    font-size: 14px;
+.leaflet-tooltip.blue-point,
+.leaflet-tooltip.red-point,
+.leaflet-tooltip.point-label {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
 
 .distance-label {
-    background: white;
-    border: 1px solid #666;
-    padding: 2px 4px;
-    border-radius: 3px;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: #000;
     font-size: 12px;
-    white-space: nowrap;
-}
-
-.route-toggle {
-    background: white;
-    padding: 10px;
-    border-radius: 4px;
-    box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-}
-
-.toggle-control {
-    font-size: 14px;
-    color: #333;
-}
-
-.toggle-control label {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    cursor: pointer;
-}
-
-.map-marker {
-    width: 30px;
-    height: 40px;
-    position: relative;
-    background: #fff;
-    border-radius: 50% 50% 50% 0;
-    transform: rotate(-45deg);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-}
-
-.map-marker::after {
-    content: '';
-    width: 24px;
-    height: 24px;
-    margin: 3px 0 0 3px;
-    position: absolute;
-    border-radius: 50%;
-}
-
-.map-marker span {
-    width: 100%;
-    text-align: center;
-    position: absolute;
-    transform: rotate(45deg);
-    display: block;
-    top: 50%;
-    left: 50%;
-    transform-origin: 0 0;
     font-weight: bold;
-    font-size: 12px;
+    white-space: nowrap;
+    transform: rotate(var(--angle));
+    transform-origin: center;
+    margin-top: -8px !important;
+    pointer-events: none;
 }
 
-.start-point .map-marker {
-    background: #4CAF50;
-}
-
-.start-point .map-marker::after {
-    background: #81C784;
-}
-
-.start-point .map-marker span {
-    color: white;
-}
-
-.end-point .map-marker {
-    background: #F44336;
-}
-
-.end-point .map-marker::after {
-    background: #E57373;
-}
-
-.end-point .map-marker span {
-    color: white;
-}
-
-.via-point .map-marker {
-    background: #2196F3;
-}
-
-.via-point .map-marker::after {
-    background: #64B5F6;
-}
-
-.via-point .map-marker span {
-    color: white;
-}
-
-.point-marker .map-marker {
-    background: #9E9E9E;
-}
-
-.point-marker .map-marker::after {
-    background: #BDBDBD;
-}
-
-.point-marker .map-marker span {
-    color: #424242;
+.leaflet-tooltip.distance-label {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
 }
  

@@ -33,8 +33,8 @@ class MapHandler {
 
         document.getElementById('toggleRoutes').addEventListener('change', (e) => {
             const isVisible = e.target.checked;
-            Object.values(this.routeLayers).forEach(layer => {
-                if (layer._map) {
+            Object.entries(this.routeLayers).forEach(([routeName, layer]) => {
+                if (routeName !== 'boundary' && layer._map) {
                     layer.setStyle({ opacity: isVisible ? 0.8 : 0 });
                 }
             });
@@ -58,7 +58,8 @@ class MapHandler {
             marker.bindTooltip(name, {
                 permanent: true,
                 direction: 'top',
-                className: labelClass
+                className: labelClass,
+                offset: [-14, 20]
             });
             
             this.pointLayers[name] = marker;
@@ -88,7 +89,7 @@ class MapHandler {
                 boundaryPoints.map(p => [p.lat, p.lng]),
                 {
                     color: '#000000',
-                    weight: 2
+                    weight: 3
                 }
             ).addTo(this.map);
             this.routeLayers['boundary'] = boundaryLine;
@@ -137,11 +138,9 @@ class MapHandler {
     highlightPath(path, start, end, via) {
         this.clearHighlights();
         
-        // Tạo mảng các điểm để vẽ đường đi
         const pathPoints = [];
         let totalDistance = 0;
         
-        // Thu thập tất cả các điểm và tính khoảng cách
         for (let i = 0; i < path.length - 1; i++) {
             const point1 = POINTS[path[i]];
             const point2 = POINTS[path[i + 1]];
@@ -150,7 +149,10 @@ class MapHandler {
             const distance = this.calculateDistance(point1, point2);
             totalDistance += distance;
             
-            // Thêm label khoảng cách
+            // Tính góc của đoạn đường
+            const angle = Math.atan2(point2.lat - point1.lat, point2.lng - point1.lng) * 180 / Math.PI;
+            
+            // Tính điểm giữa
             const midPoint = {
                 lat: (point1.lat + point2.lat) / 2,
                 lng: (point1.lng + point2.lng) / 2
@@ -159,26 +161,31 @@ class MapHandler {
             const distanceLabel = L.tooltip({
                 permanent: true,
                 direction: 'center',
-                className: 'distance-label'
+                className: 'distance-label',
+                offset: [0, 0]
             })
             .setContent(`${distance.toFixed(1)} km`)
-            .setLatLng([midPoint.lat, midPoint.lng])
-            .addTo(this.map);
+            .setLatLng([midPoint.lat, midPoint.lng]);
             
+            // Thêm style trực tiếp để xoay label theo góc của đường
+            const labelElement = distanceLabel.getElement();
+            if (labelElement) {
+                labelElement.style.setProperty('--angle', `${angle}deg`);
+            }
+            
+            distanceLabel.addTo(this.map);
             this.distanceLabels.push(distanceLabel);
         }
         
-        // Thêm điểm cuối cùng
         pathPoints.push([POINTS[path[path.length - 1]].lat, POINTS[path[path.length - 1]].lng]);
         
-        // Vẽ đường đi được highlight
         this.pathLayer = L.polyline(pathPoints, {
             color: '#FFD700',
             weight: 4,
-            opacity: 0.8
+            opacity: 0.8,
+            zIndex: 1
         }).addTo(this.map);
 
-        // Hiển thị kết quả
         const pathResult = document.getElementById('pathResult');
         let resultHTML = `
             <div class="path">Đường đi: ${path.join(' → ')}</div>
