@@ -15,9 +15,9 @@ class MapHandler {
         this.initializePoints();
         this.initializeRoutes();
         this.addRouteToggleControl();
-        document.getElementById('toggleDashedRoutes').addEventListener('click', () => {
-            this.toggleDashedRoutes();
-        });
+        //document.getElementById('toggleDashedRoutes').addEventListener('click', () => {
+        //   this.toggleDashedRoutes();
+        //});
     }
 
     addRouteToggleControl() {
@@ -47,6 +47,7 @@ class MapHandler {
     }
 
     initializePoints() {
+        //Tô màu cho điểm ở đây, ẩn điểm ở đây
         const bluePoints = ['UDOSI', 'OSIXA', 'SAMAP', 'SUDUN', 'VIMUT'];
         const redPoints = ['PANDI', 'ARESI'];
         const hiddenPoints = ['D18', 'D19', 'D20', 'D21', 'DX', 'DY', 'DZ', 'D05', 'D08', 'DN2'];
@@ -77,22 +78,21 @@ class MapHandler {
     initializeRoutes() {
         Object.entries(ROUTES).forEach(([routeName, route]) => {
             const points = route.points.map(point => POINTS[point]);
-            if (points.every(p => p)) {
+            if (points.every(p => p) && !route.dashArray) { // Chỉ vẽ đường không có dashArray
                 const polyline = L.polyline(
                     points.map(p => [p.lat, p.lng]),
                     {
                         color: route.color,
-                        weight: 2,
-                        dashArray: route.dashArray || null
+                        weight: 2
                     }
                 ).addTo(this.map);
                 this.routeLayers[routeName] = polyline;
-                
-                if (route.dashArray) {
-                    this.dashedRoutes[routeName] = polyline;
-                }
             }
         });
+
+
+
+
 
         // Vẽ đường biên giới
         const boundaryPoints = BOUNDARIES.map(point => POINTS[point]);
@@ -272,13 +272,13 @@ class MapHandler {
         return totalDistance;
     }
 
-    toggleDashedRoutes() {
-        this.dashedRoutesVisible = !this.dashedRoutesVisible;
-        Object.entries(this.routeLayers).forEach(([routeName, layer]) => {
-            const route = ROUTES[routeName];
-            if (route && route.dashArray) {
-                layer.setStyle({ opacity: this.dashedRoutesVisible ? 0.8 : 0 });
-            }
-        });
-    }
+    //toggleDashedRoutes() {
+    //    this.dashedRoutesVisible = !this.dashedRoutesVisible;
+    //    Object.entries(this.routeLayers).forEach(([routeName, layer]) => {
+    //        const route = ROUTES[routeName];
+    //        if (route && route.dashArray) {
+    //            layer.setStyle({ opacity: this.dashedRoutesVisible ? 0.8 : 0 });
+    //        }
+    //    });
+    //}
 }
