@@ -33,51 +33,14 @@ class Graph {
         this.adjacencyList[vertex2].push({ node: vertex1, weight });
     }
 
-    calculateDistance(point1, point2) {
-        const R = 6371; // Bán kính Trái Đất (km)
-        const lat1 = point1.lat * Math.PI / 180;
-        const lat2 = point2.lat * Math.PI / 180;
-        const deltaLat = (point2.lat - point1.lat) * Math.PI / 180;
-        const deltaLon = (point2.lng - point1.lng) * Math.PI / 180;
-
-        const a = Math.sin(deltaLat/2) * Math.sin(deltaLat/2) +
-                Math.cos(lat1) * Math.cos(lat2) *
-                Math.sin(deltaLon/2) * Math.sin(deltaLon/2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-        return R * c;
-    }
-
-    clone() {
-        const newGraph = new Graph();
-        for (let vertex in this.adjacencyList) {
-            newGraph.adjacencyList[vertex] = [...this.adjacencyList[vertex]];
-        }
-        return newGraph;
-    }
-
-    removeVertex(vertex) {
-        for (let adjVertex in this.adjacencyList) {
-            this.adjacencyList[adjVertex] = this.adjacencyList[adjVertex].filter(
-                edge => edge.node !== vertex
-            );
-        }
-        delete this.adjacencyList[vertex];
-    }
-
-    dijkstra(start, finish, excludePoint = null) {
-        if (excludePoint) {
-            const tempGraph = this.clone();
-            tempGraph.removeVertex(excludePoint);
-            return tempGraph.dijkstra(start, finish);
-        }
-
+    dijkstra(start, end) {
         const nodes = new PriorityQueue();
         const distances = {};
         const previous = {};
         let path = [];
         let smallest;
 
-        // Build initial state
+        // Xây dựng trạng thái ban đầu
         for (let vertex in this.adjacencyList) {
             if (vertex === start) {
                 distances[vertex] = 0;
@@ -89,10 +52,11 @@ class Graph {
             previous[vertex] = null;
         }
 
-        // Tìm đường đi ngắn nhất
+        // Chừng nào còn node để visit
         while (nodes.values.length) {
             smallest = nodes.dequeue().val;
-            if (smallest === finish) {
+            if (smallest === end) {
+                // Xây dựng đường đi
                 while (previous[smallest]) {
                     path.push(smallest);
                     smallest = previous[smallest];
@@ -102,22 +66,20 @@ class Graph {
 
             if (smallest || distances[smallest] !== Infinity) {
                 for (let neighbor of this.adjacencyList[smallest]) {
+                    // Tính khoảng cách đến neighbor
                     let candidate = distances[smallest] + neighbor.weight;
                     let nextNeighbor = neighbor.node;
                     if (candidate < distances[nextNeighbor]) {
+                        // Cập nhật khoảng cách mới
                         distances[nextNeighbor] = candidate;
+                        // Cập nhật node trước đó
                         previous[nextNeighbor] = smallest;
+                        // Enqueue trong PriorityQueue với priority mới
                         nodes.enqueue(nextNeighbor, candidate);
                     }
                 }
             }
         }
-
-        if (!path.length && start !== finish) {
-            return null;
-        }
-
-        path.push(start);
-        return path.reverse();
+        return path.concat(smallest).reverse();
     }
 }

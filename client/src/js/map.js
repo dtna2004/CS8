@@ -7,6 +7,9 @@ class MapHandler {
         this.pathLayer = null;
         this.dashedRoutesVisible = true;
         this.dashedRoutes = {};
+        this.pheromoneLines = [];
+        this.antPaths = [];
+        this.iterationInfo = L.control({ position: 'bottomleft' });
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
@@ -15,6 +18,7 @@ class MapHandler {
         this.initializePoints();
         this.initializeRoutes();
         this.addRouteToggleControl();
+        this.addIterationControl();
         //document.getElementById('toggleDashedRoutes').addEventListener('click', () => {
         //   this.toggleDashedRoutes();
         //});
@@ -78,17 +82,24 @@ class MapHandler {
     initializeRoutes() {
         Object.entries(ROUTES).forEach(([routeName, route]) => {
             const points = route.points.map(point => POINTS[point]);
-            if (points.every(p => p) && !route.dashArray) { // Chỉ vẽ đường không có dashArray
+            if (points.every(p => p)) {
                 const polyline = L.polyline(
                     points.map(p => [p.lat, p.lng]),
                     {
                         color: route.color,
-                        weight: 2
+                        weight: 2,
+                        dashArray: route.dashArray || null
                     }
                 ).addTo(this.map);
                 this.routeLayers[routeName] = polyline;
+                
+                if (route.dashArray) {
+                    this.dashedRoutes[routeName] = polyline;
+                }
             }
         });
+
+
 
 
 
@@ -147,70 +158,47 @@ class MapHandler {
         });
     }
 
-    highlightPath(path, start, end, via) {
+    highlightPath(path, totalDistance) {
         this.clearHighlights();
         
-        const pathPoints = [];
-        let totalDistance = 0;
+        const points = path.map(point => POINTS[point]);
         
-        for (let i = 0; i < path.length - 1; i++) {
-            const point1 = POINTS[path[i]];
-            const point2 = POINTS[path[i + 1]];
-            pathPoints.push([point1.lat, point1.lng]);
-            
-            const distance = this.calculateDistance(point1, point2);
-            totalDistance += distance;
-            
-            // Tính góc của đoạn đường
-            const angle = Math.atan2(point2.lng - point1.lng, point2.lat - point1.lat) * 180 / Math.PI;
-            
-            // Tính điểm chính giữa đoạn đường
+        // Vẽ đường đi màu vàng
+        this.pathLayer = L.polyline(
+            points.map(p => [p.lat, p.lng]),
+            {
+                color: '#FFD700',
+                weight: 4,
+                opacity: 0.8
+            }
+        ).addTo(this.map);
+
+        // Hiển thị khoảng cách cho từng đoạn
+        for(let i = 0; i < points.length - 1; i++) {
+            const distance = this.calculateDistance(points[i], points[i+1]);
             const midPoint = {
-                lat: (point1.lat + point2.lat) / 2,
-                lng: (point1.lng + point2.lng) / 2
+                lat: (points[i].lat + points[i+1].lat) / 2,
+                lng: (points[i].lng + points[i+1].lng) / 2
             };
             
-            // Tạo label với góc xoay phù hợp
-            const distanceLabel = L.tooltip({
+            const label = L.tooltip({
                 permanent: true,
                 direction: 'center',
-                className: 'distance-label',
-                offset: [0, 0]
+                className: 'distance-label'
             })
             .setContent(`${distance.toFixed(1)} km`)
             .setLatLng([midPoint.lat, midPoint.lng]);
             
-            // Điều chỉnh góc xoay của label
-            const labelElement = distanceLabel.getElement();
-            if (labelElement) {
-                // Điều chỉnh góc để text luôn dễ đọc
-                let rotationAngle = angle;
-                if (angle > 90 || angle < -90) {
-                    rotationAngle = angle + 180;
-                }
-                labelElement.style.setProperty('--angle', `${rotationAngle}deg`);
-            }
-            
-            distanceLabel.addTo(this.map);
-            this.distanceLabels.push(distanceLabel);
+            this.distanceLabels.push(label);
+            label.addTo(this.map);
         }
-        
-        pathPoints.push([POINTS[path[path.length - 1]].lat, POINTS[path[path.length - 1]].lng]);
-        
-        // Vẽ đường màu vàng
-        this.pathLayer = L.polyline(pathPoints, {
-            color: '#FFD700',
-            weight: 4,
-            opacity: 0.8,
-            zIndex: 1
-        }).addTo(this.map);
 
+        // Hiển thị tổng khoảng cách
         const pathResult = document.getElementById('pathResult');
-        let resultHTML = `
+        pathResult.innerHTML = `
             <div class="path">Đường đi: ${path.join(' → ')}</div>
             <div class="distance">Tổng khoảng cách: ${totalDistance.toFixed(1)} km</div>
         `;
-        pathResult.innerHTML = resultHTML;
     }
 
     highlightSpecialPoints(start, end, via) {
@@ -248,7 +236,7 @@ class MapHandler {
     }
 
     calculateDistance(point1, point2) {
-        const R = 6371; // Bán kính Trái Đất (km)
+        const R = 6371;
         const lat1 = point1.lat * Math.PI / 180;
         const lat2 = point2.lat * Math.PI / 180;
         const deltaLat = (point2.lat - point1.lat) * Math.PI / 180;
@@ -281,4 +269,80 @@ class MapHandler {
     //        }
     //    });
     //}
+
+    addIterationControl() {
+        this.iterationInfo.onAdd = () => {
+            const div = L.DomUtil.create('div', 'iteration-info');
+            div.innerHTML = `
+                <div class="info-panel">
+                    <h4>ACO Progress</h4>
+                    <div id="iteration-count">Iteration: 0/0</div>
+                    <div id="best-distance">Best Distance: 0 km</div>
+                </div>
+            `;
+            return div;
+        };
+        this.iterationInfo.addTo(this.map);
+    }
+
+    clearPheromoneLines() {
+        this.pheromoneLines.forEach(line => line.remove());
+        this.pheromoneLines = [];
+    }
+
+    drawPheromone(point1, point2, opacity) {
+        const line = L.polyline(
+            [[point1.lat, point1.lng], [point2.lat, point2.lng]],
+            {
+                color: '#2196F3',
+                weight: 2,
+                opacity: opacity,
+                dashArray: '5,10'
+            }
+        ).addTo(this.map);
+        
+        this.pheromoneLines.push(line);
+    }
+
+    drawAntPath(points) {
+        // Xóa đường đi cũ của kiến
+        this.antPaths.forEach(path => path.remove());
+        this.antPaths = [];
+
+        // Vẽ đường đi mới
+        const antLine = L.polyline(
+            points.map(p => [p.lat, p.lng]),
+            {
+                color: '#FF4081',
+                weight: 2,
+                opacity: 0.6
+            }
+        ).addTo(this.map);
+        
+        this.antPaths.push(antLine);
+    }
+
+    highlightBestPath(points, distance) {
+        if(this.bestPathLayer) {
+            this.bestPathLayer.remove();
+        }
+
+        this.bestPathLayer = L.polyline(
+            points.map(p => [p.lat, p.lng]),
+            {
+                color: '#FFD700',
+                weight: 4,
+                opacity: 0.8
+            }
+        ).addTo(this.map);
+
+        // Cập nhật thông tin
+        document.getElementById('best-distance').innerHTML = 
+            `Best Distance: ${distance.toFixed(1)} km`;
+    }
+
+    updateIterationInfo(current, total) {
+        document.getElementById('iteration-count').innerHTML = 
+            `Iteration: ${current}/${total}`;
+    }
 }

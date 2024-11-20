@@ -10,6 +10,30 @@
 <body>
     <div class="container">
         <div class="control-panel">
+            <div class="algorithm-select">
+                <label>Thuật toán:</label>
+                <select id="algorithm">
+                    <option value="dijkstra">Dijkstra</option>
+                    <option value="aco">Ant Colony Optimization</option>
+                </select>
+            </div>
+            
+            <div id="aco-params" class="params-panel" style="display: none;">
+                <h4>ACO Parameters</h4>
+                <div class="param-input">
+                    <label>Số kiến:</label>
+                    <input type="number" id="antCount" value="20" min="1" max="100">
+                </div>
+                <div class="param-input">
+                    <label>Tốc độ bay hơi:</label>
+                    <input type="number" id="evaporationRate" value="0.1" min="0" max="1" step="0.1">
+                </div>
+                <div class="param-input">
+                    <label>Số vòng lặp:</label>
+                    <input type="number" id="iterations" value="50" min="1" max="200">
+                </div>
+            </div>
+            
             <div class="input-group">
                 <label for="start">Điểm xuất phát:</label>
                 <select id="start"></select>
@@ -22,7 +46,10 @@
                 <label for="via">Điểm chặn:</label>
                 <select id="via"></select>
             </div>
-            <button id="findPath">Tìm đường</button>
+            <div class="button-group">
+                <button id="findPath">Tìm đường</button>
+                <button id="stopACO" style="display: none; background: #f44336;">Dừng lại</button>
+            </div>
             
             <div id="pathResult" class="path-result"></div>
         </div>
@@ -32,6 +59,7 @@
     <script src="js/constants.js"></script>
     <script src="js/dijkstra.js"></script>
     <script src="js/map.js"></script>
+    <script src="js/aco.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html> 
