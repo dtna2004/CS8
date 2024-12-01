@@ -55,6 +55,23 @@ button#findPath:hover {
     border-radius: 4px;
 }
 
+.aco-log {
+    margin-top: 15px;
+    padding: 10px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.aco-log .log-entry {
+    margin: 2px 0;
+    padding: 2px 0;
+    border-bottom: 1px solid #eee;
+}
+
 .leaflet-tooltip {
     background: transparent !important;
     border: none !important;
@@ -118,15 +135,78 @@ button#findPath:hover {
 }
 
 .info-panel {
-    padding: 10px;
     background: white;
+    padding: 10px;
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    max-width: 300px;
 }
 
 .info-panel h4 {
     margin: 0 0 10px 0;
     color: #333;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.pheromone-legend {
+    margin-top: 10px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.color-box {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+}
+
+.pheromone-value {
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: red;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.ant-paths-info {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.iteration-header {
+    font-weight: bold;
+    margin: 10px 0 5px;
+    color: #666;
+}
+
+.ant-path-item {
+    font-size: 12px;
+    margin: 5px 0;
+    padding: 5px;
+    background: #f5f5f5;
+    border-radius: 3px;
+}
+
+.path-rank {
+    font-weight: bold;
+    color: #4CAF50;
+    margin-right: 5px;
+}
+
+.path-distance {
+    float: right;
+    color: #666;
+}
+
+.pheromone-line {
+    transition: opacity 0.5s ease;
 }
 
 .ant-path {
@@ -140,10 +220,6 @@ button#findPath:hover {
     100% {
         stroke-dashoffset: 0;
     }
-}
-
-.pheromone-line {
-    transition: opacity 0.5s ease;
 }
 
 .control-panel {
@@ -206,5 +282,185 @@ button#findPath:hover {
 
 #stopACO:hover {
     background: #d32f2f;
+}
+
+.info-panel.compact {
+    max-width: 200px;
+    font-size: 12px;
+    padding: 8px;
+}
+
+.info-panel.compact h4 {
+    font-size: 14px;
+    margin-bottom: 5px;
+}
+
+.info-panel.compact .legend-item {
+    margin: 2px 0;
+}
+
+.info-panel.compact .color-box {
+    width: 15px;
+    height: 15px;
+}
+
+.toggle-controls {
+    background: white;
+    padding: 8px;
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+.toggle-button {
+    font-size: 12px;
+    color: #333;
+}
+
+.toggle-button label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.toggle-button input {
+    margin-right: 5px;
+}
+
+.pheromone-line {
+    transition: opacity 0.3s ease;
+}
+
+.pheromone-value {
+    font-size: 8px;
+    opacity: 0.7;
+}
+
+.best-path-info {
+    max-width: 250px;
+}
+
+.best-path-item {
+    background: #f5f5f5;
+    padding: 5px;
+    border-radius: 3px;
+    margin-top: 5px;
+}
+
+.path-points {
+    font-size: 12px;
+    margin-bottom: 3px;
+}
+
+.path-distance {
+    font-size: 12px;
+    color: #666;
+    text-align: right;
+}
+
+.mandatory-points {
+    margin-top: 10px;
+}
+
+.mandatory-point-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    gap: 8px;
+}
+
+.mandatory-point-item select {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    min-width: 150px;
+}
+
+.small-button {
+    padding: 6px 12px;
+    font-size: 12px;
+    background: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    margin-top: 5px;
+}
+
+.remove-point {
+    padding: 6px 10px;
+    background: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    min-width: 30px;
+}
+
+.small-button:hover,
+.remove-point:hover {
+    opacity: 0.9;
+}
+
+#mandatoryPointsList {
+    margin-bottom: 8px;
+}
+
+.special-point {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.start-point {
+    color: #4CAF50;
+    background: rgba(76, 175, 80, 0.2);
+    border: 2px solid #4CAF50;
+    border-radius: 50%;
+}
+
+.end-point {
+    color: #f44336;
+    background: rgba(244, 67, 54, 0.2);
+    border: 2px solid #f44336;
+    border-radius: 50%;
+}
+
+.via-point {
+    color: #2196F3;
+    background: rgba(33, 150, 243, 0.2);
+    border: 2px solid #2196F3;
+    border-radius: 50%;
+}
+
+.mandatory-point {
+    color: #9C27B0;
+    background: rgba(156, 39, 176, 0.2);
+    border: 2px solid #9C27B0;
+    border-radius: 50%;
+}
+
+.aco-progress {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 14px;
+    z-index: 1000;
+}
+
+.ant-marker, .best-path-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transform-origin: center;
 }
  

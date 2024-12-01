@@ -1,136 +1,232 @@
 class FlightPathFinder {
     constructor() {
+        this.hiddenPoints = ['D18', 'D19', 'D20', 'D21', 'DX', 'DY', 'DZ', 'D05', 'D08', 'DN2'];
         this.map = new MapHandler();
         this.aco = new AntColonyOptimizer();
         this.aco.setMapHandler(this.map);
+        this.mandatoryPoints = [];
+        this.blockedPoints = [];
         this.initializeSelects();
         this.addEventListeners();
     }
 
     initializeSelects() {
-        const points = Object.keys(POINTS).filter(point => 
-            !['D18', 'D19', 'D20', 'D21', 'DX', 'DY', 'DZ', 'D05', 'D08', 'DN2'].includes(point)
-        );
+        const startSelect = document.getElementById('start');
+        const endSelect = document.getElementById('end');
         
-        ['start', 'end'].forEach(selectId => {
-            const select = document.getElementById(selectId);
-            if (!select) {
-                console.error(`Element with id '${selectId}' not found`);
-                return;
+        const startDefaultOption = document.createElement('option');
+        startDefaultOption.value = '';
+        startDefaultOption.textContent = 'Chọn điểm xuất phát';
+        startSelect.appendChild(startDefaultOption);
+
+        const endDefaultOption = document.createElement('option');
+        endDefaultOption.value = '';
+        endDefaultOption.textContent = 'Chọn điểm đích';
+        endSelect.appendChild(endDefaultOption);
+        
+        Object.keys(POINTS).forEach(point => {
+            if (!this.hiddenPoints.includes(point)) {
+                const option1 = document.createElement('option');
+                const option2 = document.createElement('option');
+                option1.value = option2.value = point;
+                option1.textContent = option2.textContent = point;
+                startSelect.appendChild(option1);
+                endSelect.appendChild(option2);
             }
+        });
+
+        this.updateMandatoryPointsList();
+        this.updateBlockedPointsList();
+
+        const addMandatoryButton = document.getElementById('addMandatoryPoint');
+        if (addMandatoryButton) {
+            addMandatoryButton.addEventListener('click', () => {
+                this.addMandatoryPointSelect();
+            });
+        }
+
+        const addBlockedButton = document.getElementById('addBlockedPoint');
+        if (addBlockedButton) {
+            addBlockedButton.addEventListener('click', () => {
+                this.addBlockedPointSelect();
+            });
+        }
+
+        const algorithmSelect = document.getElementById('algorithm');
+        const acoParams = document.getElementById('aco-params');
+        algorithmSelect.addEventListener('change', (e) => {
+            acoParams.style.display = e.target.value === 'aco' ? 'block' : 'none';
+        });
+    }
+
+    updateMandatoryPointsList() {
+        const container = document.getElementById('mandatoryPointsList');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        this.mandatoryPoints.forEach((point, index) => {
+            const div = document.createElement('div');
+            div.className = 'point-item mandatory-point-item';
             
-            select.innerHTML = ''; // Xóa options cũ
+            const select = this.createPointSelect();
+            select.value = point || '';
+            select.addEventListener('change', (e) => {
+                this.mandatoryPoints[index] = e.target.value;
+            });
+
+            const removeButton = document.createElement('button');
+            removeButton.className = 'remove-point';
+            removeButton.innerHTML = 'x';
+            removeButton.addEventListener('click', () => {
+                this.mandatoryPoints.splice(index, 1);
+                this.updateMandatoryPointsList();
+            });
+
+            div.appendChild(select);
+            div.appendChild(removeButton);
+            container.appendChild(div);
+        });
+    }
+
+    updateBlockedPointsList() {
+        const container = document.getElementById('blockedPointsList');
+        if (!container) return;
+        
+        container.innerHTML = '';
+        
+        this.blockedPoints.forEach((point, index) => {
+            const div = document.createElement('div');
+            div.className = 'point-item blocked-point-item';
             
-            // Thêm option mặc định
-            const defaultOption = document.createElement('option');
-            defaultOption.value = '';
-            defaultOption.textContent = `Chọn điểm ${selectId === 'start' ? 'xuất phát' : 'đích'}`;
-            select.appendChild(defaultOption);
-            
-            // Thêm các điểm có thể chọn
-            points.forEach(point => {
+            const select = this.createPointSelect();
+            select.value = point || '';
+            select.addEventListener('change', (e) => {
+                this.blockedPoints[index] = e.target.value;
+                this.aco.blockedPoints = [...this.blockedPoints].filter(p => p);
+            });
+
+            const removeButton = document.createElement('button');
+            removeButton.className = 'remove-point';
+            removeButton.innerHTML = 'x';
+            removeButton.addEventListener('click', () => {
+                this.blockedPoints.splice(index, 1);
+                this.updateBlockedPointsList();
+                this.aco.blockedPoints = [...this.blockedPoints].filter(p => p);
+            });
+
+            div.appendChild(select);
+            div.appendChild(removeButton);
+            container.appendChild(div);
+        });
+    }
+
+    createPointSelect() {
+        const select = document.createElement('select');
+        select.className = 'point-select';
+        
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = 'Chọn điểm';
+        select.appendChild(defaultOption);
+        
+        Object.keys(POINTS).forEach(point => {
+            if (!this.hiddenPoints.includes(point)) {
                 const option = document.createElement('option');
                 option.value = point;
                 option.textContent = point;
                 select.appendChild(option);
-            });
+            }
         });
+        
+        return select;
+    }
 
-        const viaSelect = document.getElementById('via');
-        if (!viaSelect) {
-            console.error("Element with id 'via' not found");
-            return;
+    addMandatoryPointSelect() {
+        this.mandatoryPoints.push('');
+        this.updateMandatoryPointsList();
+    }
+
+    addBlockedPointSelect() {
+        this.blockedPoints.push('');
+        this.updateBlockedPointsList();
+    }
+
+    validatePoints(start, end, mandatoryPoints, blockedPoints) {
+        if (!start || !end) {
+            alert('Vui lòng chọn điểm bắt đầu và điểm kết thúc!');
+            return false;
         }
-        
-        viaSelect.innerHTML = ''; // Xóa options cũ
-        
-        // Thêm option "không có điểm chặn"
-        const noneOption = document.createElement('option');
-        noneOption.value = 'none';
-        noneOption.textContent = 'Không có điểm chặn';
-        viaSelect.appendChild(noneOption);
-        
-        points.forEach(point => {
-            const option = document.createElement('option');
-            option.value = point;
-            option.textContent = point;
-            viaSelect.appendChild(option);
-        });
+
+        if (start === end) {
+            alert('Điểm bắt đầu và điểm kết thúc không được trùng nhau!');
+            return false;
+        }
+
+        const allPoints = [start, end, ...mandatoryPoints, ...blockedPoints];
+        const uniquePoints = new Set(allPoints.filter(p => p));
+        if (uniquePoints.size !== allPoints.filter(p => p).length) {
+            alert('Các điểm không được trùng nhau!');
+            return false;
+        }
+
+        return true;
     }
 
     addEventListeners() {
-        const stopButton = document.getElementById('stopACO');
         const findButton = document.getElementById('findPath');
-
-        document.getElementById('algorithm').addEventListener('change', (e) => {
-            const acoParams = document.getElementById('aco-params');
-            stopButton.style.display = e.target.value === 'aco' ? 'none' : 'none';
-            acoParams.style.display = e.target.value === 'aco' ? 'block' : 'none';
-        });
-
-        stopButton.addEventListener('click', () => {
-            this.aco.stop();
-            stopButton.style.display = 'none';
-            findButton.style.display = 'block';
-        });
+        const stopButton = document.getElementById('stopACO');
 
         findButton.addEventListener('click', async () => {
+            const algorithm = document.getElementById('algorithm').value;
+            const start = document.getElementById('start').value;
+            const end = document.getElementById('end').value;
+            const mandatoryPoints = this.mandatoryPoints.filter(p => p);
+            const blockedPoints = this.blockedPoints.filter(p => p);
+
+            if (!this.validatePoints(start, end, mandatoryPoints, blockedPoints)) {
+                return;
+            }
+
+            this.map.clearHighlights();
+            findButton.disabled = true;
+
             try {
-                const algorithm = document.getElementById('algorithm').value;
-                const start = document.getElementById('start').value;
-                const end = document.getElementById('end').value;
-                const via = document.getElementById('via').value;
-
-                // Validation
-                if (!start || !end) {
-                    alert('Vui lòng chọn điểm xuất phát và điểm đích!');
-                    return;
-                }
-
-                if (start === end) {
-                    alert('Điểm xuất phát và điểm đích không được trùng nhau!');
-                    return;
-                }
-
-                if (via !== 'none' && (via === start || via === end)) {
-                    alert('Điểm chặn không được trùng với điểm xuất phát hoặc điểm đích!');
-                    return;
-                }
-
-                this.map.clearHighlights();
-
                 if(algorithm === 'aco') {
-                    // Hiển thị nút dừng và ẩn nút tìm đường
-                    stopButton.style.display = 'block';
-                    findButton.style.display = 'none';
-
-                    // Cập nhật tham số ACO
-                    this.aco.params.antCount = parseInt(document.getElementById('antCount').value) || 20;
-                    this.aco.params.evaporationRate = parseFloat(document.getElementById('evaporationRate').value) || 0.1;
-                    this.aco.params.iterations = parseInt(document.getElementById('iterations').value) || 50;
-
-                    // Chạy thuật toán ACO
-                    const path = await this.aco.findPath(start, end, via !== 'none' ? via : null);
+                    stopButton.style.display = 'inline';
                     
-                    // Sau khi hoàn thành hoặc dừng
-                    stopButton.style.display = 'none';
-                    findButton.style.display = 'block';
+                    this.aco.params.antCount = parseInt(document.getElementById('antCount').value);
+                    this.aco.params.evaporationRate = parseFloat(document.getElementById('evaporationRate').value);
+                    this.aco.params.iterations = parseInt(document.getElementById('iterations').value);
 
+                    this.aco.blockedPoints = [...blockedPoints];
+
+                    const path = await this.aco.findPath(start, end, mandatoryPoints);
+                    
                     if(!path) {
                         alert('Không tìm thấy đường đi hợp lệ!');
                         return;
                     }
+
+                    const distance = this.aco.calculatePathDistance(path);
+                    this.map.highlightPath(path, distance);
+                    this.map.highlightSpecialPoints(start, end, null, mandatoryPoints, blockedPoints);
                 } else {
-                    // Sử dụng Dijkstra
+                    // Xử lý Dijkstra
                     const graph = new Graph();
                     
-                    // Khởi tạo đồ thị từ ROUTES
+                    // Chặn các điểm trong blockedPoints
+                    blockedPoints.forEach(point => {
+                        graph.blockPoint(point);
+                    });
+                    
+                    // Khởi tạo đồ thị
                     Object.keys(POINTS).forEach(point => {
                         graph.addVertex(point);
                     });
 
-                    // Thêm các cạnh từ ROUTES
-                    for (const [routeName, route] of Object.entries(ROUTES)) {
+                    // Thêm các cạnh
+                    Object.entries(ROUTES).forEach(([routeName, route]) => {
                         const points = route.points;
                         for(let i = 0; i < points.length - 1; i++) {
                             const point1 = points[i];
@@ -140,49 +236,50 @@ class FlightPathFinder {
                                 graph.addEdge(point1, point2, distance);
                             }
                         }
-                    }
+                    });
 
-                    let path;
+                    let fullPath = [];
                     let totalDistance = 0;
 
-                    if (via !== 'none') {
-                        // Tìm đường đi qua điểm trung gian
-                        const path1 = graph.dijkstra(start, via);
-                        const path2 = graph.dijkstra(via, end);
-                        
-                        if (!path1 || !path2) {
-                            alert('Không tìm thấy đường đi hợp lệ!');
+                    // Tạo danh sách các điểm cần đi qua theo thứ tự
+                    const waypoints = [start, ...mandatoryPoints, end];
+
+                    // Tìm đường đi qua tất cả các điểm
+                    for (let i = 0; i < waypoints.length - 1; i++) {
+                        const pathSegment = graph.dijkstra(waypoints[i], waypoints[i + 1]);
+                        if (!pathSegment) {
+                            alert(`Không tìm thấy đường đi từ ${waypoints[i]} đến ${waypoints[i + 1]}!`);
                             return;
                         }
                         
-                        path2.shift(); // Loại bỏ điểm trung gian trùng lặp
-                        path = [...path1, ...path2];
-                    } else {
-                        path = graph.dijkstra(start, end);
-                    }
-
-                    if (!path) {
-                        alert('Không tìm thấy đường đi hợp lệ!');
-                        return;
+                        if (i > 0) pathSegment.shift();
+                        fullPath.push(...pathSegment);
                     }
 
                     // Tính tổng khoảng cách
-                    for(let i = 0; i < path.length - 1; i++) {
-                        const point1 = POINTS[path[i]];
-                        const point2 = POINTS[path[i + 1]];
-                        if (point1 && point2) {
-                            totalDistance += this.calculateDistance(point1, point2);
-                        }
+                    for(let i = 0; i < fullPath.length - 1; i++) {
+                        totalDistance += this.calculateDistance(
+                            POINTS[fullPath[i]], 
+                            POINTS[fullPath[i + 1]]
+                        );
                     }
 
-                    // Hiển thị đường đi
-                    this.map.highlightPath(path, totalDistance);
-                    this.map.highlightSpecialPoints(start, end, via !== 'none' ? via : null);
+                    this.map.highlightPath(fullPath, totalDistance);
+                    this.map.highlightSpecialPoints(start, end, null, mandatoryPoints, blockedPoints);
                 }
             } catch (error) {
-                console.error('Lỗi:', error);
-                alert('Đã xảy ra lỗi khi tìm đường đi. Vui lòng thử lại.');
+                console.error('Lỗi khi tìm đường:', error);
+                alert('Có lỗi xảy ra khi tìm đường!');
+            } finally {
+                findButton.disabled = false;
+                stopButton.style.display = 'none';
             }
+        });
+
+        stopButton.addEventListener('click', () => {
+            this.aco.stop();
+            stopButton.style.display = 'none';
+            findButton.disabled = false;
         });
     }
 

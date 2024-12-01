@@ -30,7 +30,7 @@
                 </div>
                 <div class="param-input">
                     <label>Số vòng lặp:</label>
-                    <input type="number" id="iterations" value="50" min="1" max="200">
+                    <input type="number" id="iterations" value="5" min="1" max="200">
                 </div>
             </div>
             
@@ -43,17 +43,25 @@
                 <select id="end"></select>
             </div>
             <div class="input-group">
-                <label for="via">Điểm chặn:</label>
-                <select id="via"></select>
+                <label>Điểm bắt buộc:</label>
+                <div id="mandatoryPointsList"></div>
+                <button id="addMandatoryPoint" class="small-button">+ Thêm điểm bắt buộc</button>
+            </div>
+            <div class="input-group">
+                <label>Điểm chặn:</label>
+                <div id="blockedPointsList"></div>
+                <button id="addBlockedPoint" class="small-button">+ Thêm điểm chặn</button>
             </div>
             <div class="button-group">
                 <button id="findPath">Tìm đường</button>
-                <button id="stopACO" style="display: none; background: #f44336;">Dừng lại</button>
+                <button id="stopACO" style="display: none;">Dừng lại</button>
             </div>
             
             <div id="pathResult" class="path-result"></div>
+            <div id="acoLog" class="aco-log"></div>
         </div>
         <div id="map"></div>
+        <div id="aco-progress" class="aco-progress"></div>
     </div>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="js/constants.js"></script>

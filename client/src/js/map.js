@@ -5,11 +5,18 @@ class MapHandler {
         this.pointLayers = {};
         this.distanceLabels = [];
         this.pathLayer = null;
-        this.dashedRoutesVisible = true;
+        this.bestPathLayer = null;
+        this.routesVisible = true;
+        this.pheromoneVisible = true;
         this.dashedRoutes = {};
         this.pheromoneLines = [];
         this.antPaths = [];
         this.iterationInfo = L.control({ position: 'bottomleft' });
+        this.pheromoneInfo = L.control({ position: 'bottomright' });
+        this.routeInfo = L.control({ position: 'topright' });
+        this.antPathsInfo = L.control({ position: 'bottomleft' });
+        this.bestPathInfo = L.control({ position: 'bottomleft' });
+        this.topPathsLayers = [];
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
@@ -17,41 +24,11 @@ class MapHandler {
 
         this.initializePoints();
         this.initializeRoutes();
-        this.addRouteToggleControl();
-        this.addIterationControl();
-        //document.getElementById('toggleDashedRoutes').addEventListener('click', () => {
-        //   this.toggleDashedRoutes();
-        //});
-    }
-
-    addRouteToggleControl() {
-        const routeControl = L.control({ position: 'topright' });
-        routeControl.onAdd = () => {
-            const div = L.DomUtil.create('div', 'route-toggle');
-            div.innerHTML = `
-                <div class="toggle-control">
-                    <label>
-                        <input type="checkbox" id="toggleRoutes" checked>
-                        Hiển thị đường bay
-                    </label>
-                </div>
-            `;
-            return div;
-        };
-        routeControl.addTo(this.map);
-
-        document.getElementById('toggleRoutes').addEventListener('change', (e) => {
-            const isVisible = e.target.checked;
-            Object.entries(this.routeLayers).forEach(([routeName, layer]) => {
-                if (routeName !== 'boundary' && layer._map) {
-                    layer.setStyle({ opacity: isVisible ? 0.8 : 0 });
-                }
-            });
-        });
+        this.addInfoControls();
+        this.addAcoInfoPanel();
     }
 
     initializePoints() {
-        //Tô màu cho điểm ở đây, ẩn điểm ở đây
         const bluePoints = ['UDOSI', 'OSIXA', 'SAMAP', 'SUDUN', 'VIMUT'];
         const redPoints = ['PANDI', 'ARESI'];
         const hiddenPoints = ['D18', 'D19', 'D20', 'D21', 'DX', 'DY', 'DZ', 'D05', 'D08', 'DN2'];
@@ -71,7 +48,7 @@ class MapHandler {
                     permanent: true,
                     direction: 'top',
                     className: labelClass,
-                    offset: [-15, 20]
+                    offset: [-15, 10]
                 });
                 
                 this.pointLayers[name] = marker;
@@ -88,6 +65,7 @@ class MapHandler {
                     {
                         color: route.color,
                         weight: 2,
+                        opacity: this.routesVisible ? 0.8 : 0,
                         dashArray: route.dashArray || null
                     }
                 ).addTo(this.map);
@@ -98,12 +76,6 @@ class MapHandler {
                 }
             }
         });
-
-
-
-
-
-
 
         // Vẽ đường biên giới
         const boundaryPoints = BOUNDARIES.map(point => POINTS[point]);
@@ -119,51 +91,152 @@ class MapHandler {
         }
     }
 
-    hidePoint(pointName) {
-        const marker = this.pointLayers[pointName];
-        if (marker) {
-            marker.setOpacity(0.3);
-        }
+    addInfoControls() {
+        // Panel thông tin về vết mùi
+        this.pheromoneInfo.onAdd = () => {
+            const div = L.DomUtil.create('div', 'info-panel pheromone-info');
+            div.innerHTML = `
+                <div class="info-header">
+                    <h4>Vết mùi</h4>
+                    <div class="toggle-control">
+                        <label>
+                            <input type="checkbox" id="togglePheromone" ${this.pheromoneVisible ? 'checked' : ''}>
+                            Hiển thị
+                        </label>
+                    </div>
+                </div>
+                <div id="iteration-info">Lần lặp: 0/0</div>
+                <div class="pheromone-legend">
+                    <div class="legend-item">
+                        <div class="color-box" style="background: rgba(255,0,0,0.7)"></div>
+                        <span>Mạnh</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="color-box" style="background: rgba(255,0,0,0.2)"></div>
+                        <span>Yếu</span>
+                    </div>
+                </div>
+            `;
+            return div;
+        };
+
+        // Panel thông tin về đường bay
+        this.routeInfo.onAdd = () => {
+            const div = L.DomUtil.create('div', 'info-panel route-info');
+            div.innerHTML = `
+                <div class="info-header">
+                    <h4>Đường bay</h4>
+                    <div class="toggle-control">
+                        <label>
+                            <input type="checkbox" id="toggleRoutes" ${this.routesVisible ? 'checked' : ''}>
+                            Hiển thị
+                        </label>
+                    </div>
+                </div>
+                <div class="route-legend">
+                    <div class="legend-item">
+                        <div class="line-box" style="background: #ff0000"></div>
+                        <span>Đường bay chính</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="line-box dashed" style="background: #00000f"></div>
+                        <span>Đường bay phụ</span>
+                    </div>
+                </div>
+            `;
+            return div;
+        };
+
+        this.pheromoneInfo.addTo(this.map);
+        this.routeInfo.addTo(this.map);
+
+        // Thêm event listeners cho các nút toggle
+        setTimeout(() => {
+            document.getElementById('togglePheromone')?.addEventListener('change', (e) => {
+                this.pheromoneVisible = e.target.checked;
+                this.updatePheromoneVisibility();
+            });
+
+            document.getElementById('toggleRoutes')?.addEventListener('change', (e) => {
+                this.routesVisible = e.target.checked;
+                this.updateRoutesVisibility();
+            });
+        }, 0);
     }
 
-    showPoint(pointName) {
-        const marker = this.pointLayers[pointName];
-        if (marker) {
-            marker.setOpacity(1);
-        }
+    updatePheromoneVisibility() {
+        const opacity = this.pheromoneVisible ? 1 : 0;
+        this.pheromoneLines.forEach(line => {
+            line.setStyle({ opacity: opacity });
+        });
+        document.querySelectorAll('.pheromone-value').forEach(el => {
+            el.style.opacity = opacity;
+        });
+    }
+
+    updateRoutesVisibility() {
+        const opacity = this.routesVisible ? 0.8 : 0;
+        Object.values(this.routeLayers).forEach(layer => {
+            if (layer._map && layer !== this.routeLayers['boundary']) {
+                layer.setStyle({ opacity: opacity });
+            }
+        });
     }
 
     clearHighlights() {
-        // Chỉ xóa đường đi được highlight trước đó
         if (this.pathLayer) {
             this.pathLayer.remove();
+            this.pathLayer = null;
         }
         
-        // Xóa các label khoảng cách
-        this.distanceLabels.forEach(label => {
-            label.remove();
+        if (this.bestPathLayer) {
+            if (Array.isArray(this.bestPathLayer)) {
+                this.bestPathLayer.forEach(layer => layer.remove());
+            } else {
+                this.bestPathLayer.remove();
+            }
+            this.bestPathLayer = null;
+        }
+        
+        this.topPathsLayers.forEach(layer => {
+            if (Array.isArray(layer)) {
+                layer.forEach(l => l.remove());
+            } else {
+                layer.remove();
+            }
         });
+        this.topPathsLayers = [];
+
+        this.distanceLabels.forEach(label => label.remove());
         this.distanceLabels = [];
         
-        // Khôi phục opacity của tất cả các điểm
         Object.values(this.pointLayers).forEach(marker => {
             marker.setOpacity(1);
         });
-        
-        // Khôi phục opacity của tất cả các đường bay
-        Object.values(this.routeLayers).forEach(layer => {
-            if (layer._map) {
-                layer.setStyle({ opacity: 0.8, weight: 2 });
-            }
-        });
+
+        document.querySelectorAll('.pheromone-value').forEach(el => el.remove());
     }
 
     highlightPath(path, totalDistance) {
         this.clearHighlights();
         
-        const points = path.map(point => POINTS[point]);
-        
-        // Vẽ đường đi màu vàng
+        if (!path || path.length < 2) {
+            console.error("Invalid path provided");
+            return;
+        }
+
+        const uniquePath = path.filter((point, index) => 
+            index === 0 || point !== path[index - 1]
+        );
+
+        const points = uniquePath.map(point => {
+            const p = POINTS[point];
+            if (!p) {
+                console.error(`Point ${point} not found in POINTS`);
+            }
+            return p;
+        }).filter(p => p);
+
         this.pathLayer = L.polyline(
             points.map(p => [p.lat, p.lng]),
             {
@@ -173,7 +246,6 @@ class MapHandler {
             }
         ).addTo(this.map);
 
-        // Hiển thị khoảng cách cho từng đoạn
         for(let i = 0; i < points.length - 1; i++) {
             const distance = this.calculateDistance(points[i], points[i+1]);
             const midPoint = {
@@ -193,46 +265,96 @@ class MapHandler {
             label.addTo(this.map);
         }
 
-        // Hiển thị tổng khoảng cách
         const pathResult = document.getElementById('pathResult');
-        pathResult.innerHTML = `
-            <div class="path">Đường đi: ${path.join(' → ')}</div>
-            <div class="distance">Tổng khoảng cách: ${totalDistance.toFixed(1)} km</div>
-        `;
+        if (pathResult) {
+            pathResult.innerHTML = `
+                <div class="path-info">
+                    <div class="path">Đường đi: ${uniquePath.join(' → ')}</div>
+                    <div class="distance">Tổng khoảng cách: ${totalDistance.toFixed(1)} km</div>
+                </div>
+            `;
+        }
+
+        this.map.fitBounds(this.pathLayer.getBounds(), {
+            padding: [50, 50]
+        });
     }
 
-    highlightSpecialPoints(start, end, via) {
-        // Highlight điểm xuất phát
+    highlightSpecialPoints(start, end, via = null, mandatoryPoints = [], blockedPoints = []) {
+        // Reset all markers to default first
+        Object.values(this.pointLayers).forEach(marker => {
+            marker.setIcon(L.icon({
+                iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+                iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+                shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41],
+                popupAnchor: [1, -34],
+                tooltipAnchor: [16, -28],
+                shadowSize: [41, 41]
+            }));
+        });
+
+        // Highlight start point
         const startMarker = this.pointLayers[start];
         if (startMarker) {
-            startMarker.setIcon(L.divIcon({
-                className: 'special-point start-point',
-                html: `<div>${start}</div>`,
-                iconSize: [30, 30]
+            startMarker.setIcon(L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41]
             }));
         }
         
-        // Highlight điểm đích
+        // Highlight end point
         const endMarker = this.pointLayers[end];
         if (endMarker) {
-            endMarker.setIcon(L.divIcon({
-                className: 'special-point end-point',
-                html: `<div>${end}</div>`,
-                iconSize: [30, 30]
+            endMarker.setIcon(L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41]
             }));
         }
         
-        // Highlight điểm chặn nếu có
+        // Highlight via point
         if (via) {
             const viaMarker = this.pointLayers[via];
             if (viaMarker) {
-                viaMarker.setIcon(L.divIcon({
-                    className: 'special-point via-point',
-                    html: `<div>${via}</div>`,
-                    iconSize: [30, 30]
+                viaMarker.setIcon(L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
+                    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41]
                 }));
             }
         }
+
+        // Highlight mandatory points
+        mandatoryPoints.forEach(point => {
+            const marker = this.pointLayers[point];
+            if (marker) {
+                marker.setIcon(L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41]
+                }));
+            }
+        });
+
+        // Highlight blocked points
+        blockedPoints.forEach(point => {
+            const marker = this.pointLayers[point];
+            if (marker) {
+                marker.setIcon(L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
+                    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41]
+                }));
+            }
+        });
     }
 
     calculateDistance(point1, point2) {
@@ -249,67 +371,66 @@ class MapHandler {
         return R * c;
     }
 
-    calculateTotalDistance(path) {
-        let totalDistance = 0;
-        for (let i = 0; i < path.length - 1; i++) {
-            const point1 = POINTS[path[i]];
-            const point2 = POINTS[path[i + 1]];
-            const distance = this.calculateDistance(point1, point2);
-            totalDistance += distance;
-        }
-        return totalDistance;
-    }
-
-    //toggleDashedRoutes() {
-    //    this.dashedRoutesVisible = !this.dashedRoutesVisible;
-    //    Object.entries(this.routeLayers).forEach(([routeName, layer]) => {
-    //        const route = ROUTES[routeName];
-    //        if (route && route.dashArray) {
-    //            layer.setStyle({ opacity: this.dashedRoutesVisible ? 0.8 : 0 });
-    //        }
-    //    });
-    //}
-
-    addIterationControl() {
-        this.iterationInfo.onAdd = () => {
-            const div = L.DomUtil.create('div', 'iteration-info');
-            div.innerHTML = `
-                <div class="info-panel">
-                    <h4>ACO Progress</h4>
-                    <div id="iteration-count">Iteration: 0/0</div>
-                    <div id="best-distance">Best Distance: 0 km</div>
-                </div>
-            `;
-            return div;
-        };
-        this.iterationInfo.addTo(this.map);
-    }
-
+    // ACO specific methods
     clearPheromoneLines() {
         this.pheromoneLines.forEach(line => line.remove());
         this.pheromoneLines = [];
     }
 
-    drawPheromone(point1, point2, opacity) {
+    drawPheromone(point1, point2, intensity, value) {
         const line = L.polyline(
             [[point1.lat, point1.lng], [point2.lat, point2.lng]],
             {
-                color: '#2196F3',
-                weight: 2,
-                opacity: opacity,
-                dashArray: '5,10'
+                color: 'rgba(255,0,0,0.5)',
+                weight: 1,
+                opacity: this.pheromoneVisible ? intensity * 0.7 : 0,
+                className: 'pheromone-line'
             }
         ).addTo(this.map);
+        
+        if (value && intensity > 0.3) {
+            const midPoint = {
+                lat: (point1.lat + point2.lat) / 2,
+                lng: (point1.lng + point2.lng) / 2
+            };
+            
+            L.tooltip({
+                permanent: true,
+                direction: 'center',
+                className: 'pheromone-value'
+            })
+            .setContent(value)
+            .setLatLng([midPoint.lat, midPoint.lng])
+            .addTo(this.map);
+        }
         
         this.pheromoneLines.push(line);
     }
 
+    updatePheromoneInfo(current, total) {
+        const info = document.getElementById('iteration-info');
+        if (info) {
+            info.innerHTML = `Lần lặp: ${current}/${total}`;
+        }
+    }
+
     drawAntPath(points) {
-        // Xóa đường đi cũ của kiến
         this.antPaths.forEach(path => path.remove());
         this.antPaths = [];
 
-        // Vẽ đường đi mới
+        points.forEach(point => {
+            const marker = L.marker([point.lat, point.lng], {
+                icon: L.divIcon({
+                    className: 'ant-marker',
+                    html: '🐜',
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                }),
+                rotationAngle: point.direction
+            }).addTo(this.map);
+            this.antPaths.push(marker);
+        });
+
         const antLine = L.polyline(
             points.map(p => [p.lat, p.lng]),
             {
@@ -322,12 +443,110 @@ class MapHandler {
         this.antPaths.push(antLine);
     }
 
-    highlightBestPath(points, distance) {
-        if(this.bestPathLayer) {
-            this.bestPathLayer.remove();
+    drawTopPaths(paths) {
+        this.topPathsLayers.forEach(layer => {
+            if (Array.isArray(layer)) {
+                layer.forEach(l => l.remove());
+            } else {
+                layer.remove();
+            }
+        });
+        this.topPathsLayers = [];
+        
+        const colors = ['#FFD700', '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'];
+        
+        paths.forEach((path, index) => {
+            const color = colors[index] || colors[0];
+            const points = path.path.map(p => POINTS[p]);
+            
+            const line = L.polyline(
+                points.map(p => [p.lat, p.lng]),
+                {
+                    color: color,
+                    weight: 4 - index * 0.5,
+                    opacity: 0.8 - index * 0.1
+                }
+            ).addTo(this.map);
+
+            const label = L.tooltip({
+                permanent: true,
+                direction: 'center',
+                className: 'path-label'
+            })
+            .setContent(`#${index + 1}: ${path.distance.toFixed(1)}km`)
+            .setLatLng([
+                points[Math.floor(points.length/2)].lat,
+                points[Math.floor(points.length/2)].lng
+            ]);
+            
+            label.addTo(this.map);
+            
+            this.topPathsLayers.push([line, label]);
+        });
+
+        const pathResult = document.getElementById('pathResult');
+        if (pathResult) {
+            pathResult.innerHTML = `
+                <div class="top-paths">
+                    <h4>Top ${paths.length} đường đi tốt nhất:</h4>
+                    ${paths.map((path, index) => `
+                        <div class="path-item" style="border-left: 4px solid ${colors[index]}">
+                            <div class="path-rank">#${index + 1}</div>
+                            <div class="path-detail">
+                                <div class="path-points">${path.path.join(' → ')}</div>
+                                <div class="path-distance">${path.distance.toFixed(1)} km</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+    }
+
+    updateAcoProgress(message) {
+        const progressElement = document.getElementById('aco-progress');
+        if (progressElement) {
+            progressElement.textContent = message;
+        }
+    }
+
+    updateIterationInfo(current, total) {
+        document.getElementById('iteration-count').innerHTML = 
+            `Iteration: ${current}/${total}`;
+    }
+
+    updateBestPathInfo(iteration, path, distance) {
+        const info = document.getElementById('best-path-info');
+        if (info) {
+            info.innerHTML = `
+                <div class="iteration-header">Lần lặp ${iteration}</div>
+                <div class="best-path-item">
+                    <div class="path-points">${path.join(' → ')}</div>
+                    <div class="path-distance">${distance.toFixed(1)} km</div>
+                </div>
+            `;
         }
 
-        this.bestPathLayer = L.polyline(
+        // Xóa đường đi tốt nhất cũ trên bản đồ
+        if (this.bestPathLayer) {
+            if (Array.isArray(this.bestPathLayer)) {
+                this.bestPathLayer.forEach(layer => {
+                    if (layer && typeof layer.remove === 'function') {
+                        layer.remove();
+                    }
+                });
+            } else if (typeof this.bestPathLayer.remove === 'function') {
+                this.bestPathLayer.remove();
+            }
+            this.bestPathLayer = null;
+        }
+
+        // Vẽ đường đi tốt nhất mới
+        const points = path.map(point => POINTS[point]).filter(p => p);
+        this.bestPathLayer = [];
+
+        // Vẽ đường đi
+        const pathLine = L.polyline(
             points.map(p => [p.lat, p.lng]),
             {
                 color: '#FFD700',
@@ -335,14 +554,125 @@ class MapHandler {
                 opacity: 0.8
             }
         ).addTo(this.map);
+        this.bestPathLayer.push(pathLine);
 
-        // Cập nhật thông tin
-        document.getElementById('best-distance').innerHTML = 
-            `Best Distance: ${distance.toFixed(1)} km`;
+        // Vẽ markers cho các điểm
+        points.forEach(point => {
+            const marker = L.marker([point.lat, point.lng], {
+                icon: L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
+                    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41]
+                })
+            }).addTo(this.map);
+            this.bestPathLayer.push(marker);
+        });
     }
 
-    updateIterationInfo(current, total) {
-        document.getElementById('iteration-count').innerHTML = 
-            `Iteration: ${current}/${total}`;
+    updateAntPathsInfo(iteration, paths, distances) {
+        const list = document.getElementById('ant-paths-list');
+        if (list) {
+            // Giới hạn hiển thị 5 đường đi tốt nhất
+            const bestPaths = paths.map((path, index) => ({
+                path,
+                distance: distances[index]
+            }))
+            .sort((a, b) => a.distance - b.distance)
+            .slice(0, 5);
+
+            list.innerHTML = `
+                <div class="iteration-header">Lần lặp ${iteration}</div>
+                ${bestPaths.map((p, i) => `
+                    <div class="ant-path-item">
+                        <span class="path-rank">#${i + 1}</span>
+                        <span class="path-points">${p.path.join(' → ')}</span>
+                        <span class="path-distance">${p.distance.toFixed(1)} km</span>
+                    </div>
+                `).join('')}
+            `;
+        }
+    }
+
+    // Thêm panel thông tin ACO
+    addAcoInfoPanel() {
+        // Panel thông tin về tiến trình ACO
+        this.acoInfo = L.control({ position: 'bottomleft' });
+        this.acoInfo.onAdd = () => {
+            const div = L.DomUtil.create('div', 'info-panel aco-info');
+            div.innerHTML = `
+                <div class="info-header">
+                    <h4>ACO Progress</h4>
+                </div>
+                <div id="iteration-count">Iteration: 0/0</div>
+                <div id="best-distance">Best Distance: 0 km</div>
+                <div id="ant-paths-list"></div>
+            `;
+            return div;
+        };
+        this.acoInfo.addTo(this.map);
+
+        // Panel thông tin về đường đi tốt nhất
+        this.bestPathInfo = L.control({ position: 'bottomleft' });
+        this.bestPathInfo.onAdd = () => {
+            const div = L.DomUtil.create('div', 'info-panel best-path-info');
+            div.innerHTML = `
+                <h4>Đường đi tốt nhất</h4>
+                <div id="best-path-info"></div>
+            `;
+            return div;
+        };
+        this.bestPathInfo.addTo(this.map);
+    }
+
+    highlightBestPath(points, distance, isTemporary = false) {
+        // Xóa các layer cũ
+        if (this.bestPathLayer) {
+            if (Array.isArray(this.bestPathLayer)) {
+                this.bestPathLayer.forEach(layer => layer.remove());
+            } else {
+                this.bestPathLayer.remove();
+            }
+        }
+        this.bestPathLayer = [];  // Khởi tạo lại mảng rỗng
+
+        // Tạo marker cho mỗi điểm
+        points.forEach(point => {
+            const marker = L.marker([point.lat, point.lng], {
+                icon: L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-gold.png',
+                    shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41]
+                }),
+                rotationAngle: point.direction
+            }).addTo(this.map);
+            this.bestPathLayer.push(marker);
+        });
+
+        // Vẽ đường đi
+        const pathLine = L.polyline(
+            points.map(p => [p.lat, p.lng]),
+            {
+                color: '#FFD700',
+                weight: 4,
+                opacity: 0.8
+            }
+        ).addTo(this.map);
+        
+        this.bestPathLayer.push(pathLine);
+
+        // Cập nhật thông tin khoảng cách
+        if (!isTemporary) {
+            const bestDistance = document.getElementById('best-distance');
+            if (bestDistance) {
+                bestDistance.innerHTML = `Khoảng cách: ${distance.toFixed(1)} km`;
+            }
+        }
+
+        // Fit bản đồ để hiển thị toàn bộ đường đi
+        this.map.fitBounds(pathLine.getBounds(), {
+            padding: [50, 50]
+        });
     }
 }
