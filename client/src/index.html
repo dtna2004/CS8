@@ -6,6 +6,7 @@
     <title>Flight Path Finder</title>
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
 </head>
 <body>
     <div class="container">
@@ -15,59 +16,90 @@
                 <select id="algorithm">
                     <option value="dijkstra">Dijkstra</option>
                     <option value="aco">Ant Colony Optimization</option>
+                    <option value="phototropism">Phototropism (Plant Growth)</option>
                 </select>
             </div>
             
-            <div id="aco-params" class="params-panel" style="display: none;">
-                <h4>ACO Parameters</h4>
-                <div class="param-input">
-                    <label>Số kiến:</label>
-                    <input type="number" id="antCount" value="20" min="1" max="100">
+            <div class="point-selection">
+                <div class="input-group">
+                    <label for="start">Điểm xuất phát:</label>
+                    <select id="start">
+                        <option value="">Chọn điểm xuất phát</option>
+                    </select>
                 </div>
-                <div class="param-input">
-                    <label>Tốc độ bay hơi:</label>
-                    <input type="number" id="evaporationRate" value="0.1" min="0" max="1" step="0.1">
+                <div class="input-group">
+                    <label for="end">Điểm đích:</label>
+                    <select id="end">
+                        <option value="">Chọn điểm đích</option>
+                    </select>
                 </div>
-                <div class="param-input">
-                    <label>Số vòng lặp:</label>
-                    <input type="number" id="iterations" value="5" min="1" max="200">
+                <div class="input-group">
+                    <label>Điểm bắt buộc:</label>
+                    <div id="mandatoryPointsList"></div>
                 </div>
             </div>
-            
-            <div class="input-group">
-                <label for="start">Điểm xuất phát:</label>
-                <select id="start"></select>
-            </div>
-            <div class="input-group">
-                <label for="end">Điểm đích:</label>
-                <select id="end"></select>
-            </div>
-            <div class="input-group">
-                <label>Điểm bắt buộc:</label>
-                <div id="mandatoryPointsList"></div>
-                <button id="addMandatoryPoint" class="small-button">+ Thêm điểm bắt buộc</button>
-            </div>
-            <div class="input-group">
-                <label>Điểm chặn:</label>
-                <div id="blockedPointsList"></div>
-                <button id="addBlockedPoint" class="small-button">+ Thêm điểm chặn</button>
-            </div>
-            <div class="button-group">
-                <button id="findPath">Tìm đường</button>
-                <button id="stopACO" style="display: none;">Dừng lại</button>
-            </div>
-            
-            <div id="pathResult" class="path-result"></div>
-            <div id="acoLog" class="aco-log"></div>
         </div>
         <div id="map"></div>
-        <div id="aco-progress" class="aco-progress"></div>
+        <button id="findButton">Tìm đường đi</button>
+        <button id="stopButton" style="display: none;">Dừng thuật toán</button>
     </div>
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+
     <script src="js/constants.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/priority-queue@1.0.0/dist/priority-queue.min.js"></script>
+    <script src="js/phototropism.js"></script>
     <script src="js/dijkstra.js"></script>
-    <script src="js/map.js"></script>
     <script src="js/aco.js"></script>
+    <script src="js/map.js"></script>
     <script src="js/main.js"></script>
+    <script>
+        // Ensure all scripts are loaded before initializing
+        window.addEventListener('load', () => {
+            // Check if all required classes are loaded
+            if (typeof POINTS === 'undefined') {
+                console.error('POINTS is not defined. Check if constants.js is loaded correctly.');
+                alert('Lỗi: Không thể tải dữ liệu điểm. Vui lòng tải lại trang.');
+                return;
+            }
+
+            if (typeof PriorityQueue === 'undefined') {
+                console.error('PriorityQueue is not defined. Check if aco.js is loaded correctly.');
+                alert('Lỗi: Không thể tải thuật toán ACO. Vui lòng tải lại trang.');
+                return;
+            }
+
+            if (typeof PhototrophicPathFinder === 'undefined') {
+                console.error('PhototrophicPathFinder is not defined. Check if phototropism.js is loaded correctly.');
+                alert('Lỗi: Không thể tải thuật toán Phototropism. Vui lòng tải lại trang.');
+                return;
+            }
+
+            // Khởi tạo các phần tử select
+            const startSelect = document.getElementById('start');
+            const endSelect = document.getElementById('end');
+
+            // Thêm các tùy chọn vào select
+            for (const point in POINTS) {
+                const optionStart = document.createElement('option');
+                const optionEnd = document.createElement('option');
+                optionStart.value = point;
+                optionEnd.value = point;
+                optionStart.textContent = point;
+                optionEnd.textContent = point;
+                startSelect.appendChild(optionStart);
+                endSelect.appendChild(optionEnd);
+            }
+
+            // Khởi tạo FlightPathFinder
+            try {
+                const flightPathFinder = new FlightPathFinder();
+                flightPathFinder.addEventListeners();
+                console.log('App initialized successfully');
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                alert('Lỗi: Không thể khởi tạo ứng dụng. Vui lòng tải lại trang.');
+            }
+        });
+    </script>
 </body>
-</html> 
+</html>

@@ -1,31 +1,83 @@
 class MapHandler {
     constructor() {
-        this.map = L.map('map').setView([11.0, 110.0], 7);
-        this.routeLayers = {};
-        this.pointLayers = {};
-        this.distanceLabels = [];
-        this.pathLayer = null;
-        this.bestPathLayer = null;
-        this.routesVisible = true;
-        this.pheromoneVisible = true;
-        this.dashedRoutes = {};
-        this.pheromoneLines = [];
-        this.antPaths = [];
-        this.iterationInfo = L.control({ position: 'bottomleft' });
-        this.pheromoneInfo = L.control({ position: 'bottomright' });
-        this.routeInfo = L.control({ position: 'topright' });
-        this.antPathsInfo = L.control({ position: 'bottomleft' });
-        this.bestPathInfo = L.control({ position: 'bottomleft' });
-        this.topPathsLayers = [];
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(this.map);
+        // Kiểm tra xem đã có instance chưa
+        if (MapHandler.instance) {
+            return MapHandler.instance;
+        }
+        MapHandler.instance = this;
 
-        this.initializePoints();
-        this.initializeRoutes();
-        this.addInfoControls();
-        this.addAcoInfoPanel();
+        // Kiểm tra và xóa map cũ nếu tồn tại
+        const mapContainer = document.getElementById('map');
+        if (!mapContainer) {
+            console.error('Map container not found');
+            return;
+        }
+
+        // Xóa map cũ nếu tồn tại
+        if (mapContainer._leaflet_id) {
+            try {
+                mapContainer._leaflet.remove();
+            } catch (error) {
+                console.warn('Error removing old map:', error);
+            }
+            mapContainer.innerHTML = '';
+        }
+
+        // Khởi tạo map mới
+        try {
+            this.map = L.map('map', {
+                preferCanvas: true,
+                renderer: L.canvas(),
+                zoomControl: true,
+                minZoom: 5,
+                maxZoom: 18
+            }).setView([11.0, 110.0], 7);
+
+            // Thêm tile layer
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(this.map);
+
+            // Khởi tạo các thuộc tính
+            this.routeLayers = new Map();
+            this.pointLayers = new Map();
+            this.distanceLabels = [];
+            this.pathLayer = null;
+            this.bestPathLayer = null;
+            this.routesVisible = true;
+            this.pheromoneVisible = true;
+            this.dashedRoutes = new Map();
+            this.pheromoneLines = [];
+            this.antPaths = [];
+            this.topPathsLayers = [];
+
+            // Khởi tạo controls
+            this.iterationInfo = L.control({ position: 'bottomleft' });
+            this.pheromoneInfo = L.control({ position: 'bottomright' });
+            this.routeInfo = L.control({ position: 'topright' });
+            this.antPathsInfo = L.control({ position: 'bottomleft' });
+            this.bestPathInfo = L.control({ position: 'bottomleft' });
+
+            // Khởi tạo dữ liệu
+            this.initializePoints();
+            this.initializeRoutes();
+            this.addInfoControls();
+            this.addAcoInfoPanel();
+
+            console.log('Map initialized successfully');
+        } catch (error) {
+            console.error('Error initializing map:', error);
+            return;
+        }
+    }
+
+    // Thêm phương thức để xóa map
+    destroy() {
+        if (this.map) {
+            this.map.remove();
+            this.map = null;
+        }
+        MapHandler.instance = null;
     }
 
     initializePoints() {
@@ -674,5 +726,40 @@ class MapHandler {
         this.map.fitBounds(pathLine.getBounds(), {
             padding: [50, 50]
         });
+    }
+
+    drawGrowthPath(points, color, score = '') {
+        if (!points || points.length < 2) return null;
+        
+        try {
+            // Tạo polyline
+            const line = L.polyline(
+                points.map(p => [p.lat, p.lng]),
+                {
+                    color: color,
+                    weight: 3,
+                    opacity: 0.8,
+                    className: 'growth-path'
+                }
+            ).addTo(this.map);
+
+            // Thêm tooltip hiển thị điểm số nếu có
+            if (score) {
+                const midPoint = points[Math.floor(points.length/2)];
+                L.tooltip({
+                    permanent: true,
+                    direction: 'center',
+                    className: 'growth-score'
+                })
+                .setContent(score)
+                .setLatLng([midPoint.lat, midPoint.lng])
+                .addTo(this.map);
+            }
+
+            return line;
+        } catch (error) {
+            console.error('Error drawing growth path:', error);
+            return null;
+        }
     }
 }

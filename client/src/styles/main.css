@@ -463,4 +463,75 @@ button#findPath:hover {
     font-size: 20px;
     transform-origin: center;
 }
+
+@keyframes grow {
+    from {
+        stroke-dashoffset: 100%;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.growth-path {
+    stroke-linecap: round;
+    transition: all 0.3s ease;
+}
+
+/* Phototropism styles */
+.growth-path {
+    stroke-dasharray: 10;
+    animation: dash 20s linear infinite;
+}
+
+.growth-score {
+    background: none;
+    border: none;
+    box-shadow: none;
+    color: #333;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+@keyframes dash {
+    to {
+        stroke-dashoffset: 1000;
+    }
+}
+
+/* Điều chỉnh màu sắc cho các điểm đặc biệt */
+.point-label {
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid #666;
+    border-radius: 3px;
+    padding: 2px 5px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.blue-point {
+    color: #0066CC;
+    border-color: #0066CC;
+}
+
+.red-point {
+    color: #CC0000;
+    border-color: #CC0000;
+}
+
+/* Thêm hiệu ứng hover cho các điểm */
+.leaflet-marker-icon:hover {
+    transform: scale(1.2);
+    transition: transform 0.2s ease-in-out;
+}
+
+/* Thêm hiệu ứng cho đường đi */
+.leaflet-polyline {
+    transition: all 0.3s ease-in-out;
+}
+
+.leaflet-polyline:hover {
+    stroke-width: 6;
+    opacity: 1 !important;
+}
  
